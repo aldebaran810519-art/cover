@@ -12,13 +12,13 @@ def replace_epub_cover(epub_path, new_cover_path, output_epub_path):
     with zipfile.ZipFile(epub_path, 'r') as zip_ref:
         zip_ref.extractall(temp_dir)
         
-    # 確保新圖片轉為標準 RGB JPEG 格式，但不修改任何解析度或長寬比例
+    # 將新圖片轉為標準 JPEG 格式，完全保留原始尺寸與比例
     processed_cover = "cover_original.jpg"
     with Image.open(new_cover_path) as img:
         img = img.convert("RGB")
         img.save(processed_cover, "JPEG", quality=95)
     
-    # 直接覆蓋 EPUB 內原本的所有封面圖片檔案
+    # 直接覆蓋 EPUB 內原本的所有封面圖片
     replaced_count = 0
     for root, dirs, files in os.walk(temp_dir):
         for file in files:
@@ -28,9 +28,10 @@ def replace_epub_cover(epub_path, new_cover_path, output_epub_path):
                 shutil.copy(processed_cover, target_path)
                 replaced_count += 1
                 
-    print(f"成功將原始比例圖片替換至 {replaced_count} 個內部封面資源中！")
+    print(f"成功將原始圖片替換至 {replaced_count} 個封面資源中！")
 
-    # 重新打包成 EPUB，保持原始結構
+    # 重新打包，輸出檔名與原檔名完全一致
+    os.makedirs(os.path.dirname(output_epub_path), exist_ok=True)
     with zipfile.ZipFile(output_epub_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
         mimetype_path = os.path.join(temp_dir, "mimetype")
         if os.path.exists(mimetype_path):
@@ -47,17 +48,21 @@ def replace_epub_cover(epub_path, new_cover_path, output_epub_path):
     shutil.rmtree(temp_dir)
     if os.path.exists(processed_cover):
         os.remove(processed_cover)
-    print("EPUB 封面替換完成！")
+    print(f"處理完成！已輸出檔名：{output_epub_path}")
 
 if __name__ == "__main__":
-    # 自動搜尋目錄下的 .epub 與 .jpg/.png 檔案
-    epub_files = [f for f in os.listdir('.') if f.endswith('.epub') and f != 'output.epub']
+    # 自動尋找資料夾內的 EPUB 與圖片
+    epub_files = [f for f in os.listdir('.') if f.endswith('.epub')]
     image_files = [f for f in os.listdir('.') if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
 
     if epub_files and image_files:
-        input_epub = epub_files[0]
+        original_epub_name = epub_files[0]
         input_image = image_files[0]
-        print(f"正在處理電子書: {input_epub}，使用封面: {input_image}")
-        replace_epub_cover(input_epub, input_image, "output.epub")
+        
+        # 輸出到 output_dir 資料夾內，維持原始檔名
+        output_epub_path = os.path.join("output_dir", original_epub_name)
+        
+        print(f"正在處理電子書: {original_epub_name}，使用封面: {input_image}")
+        replace_epub_cover(original_epub_name, input_image, output_epub_path)
     else:
         print("未尋找到 .epub 檔案或圖片檔案！")
