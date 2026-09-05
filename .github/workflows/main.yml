@@ -1,0 +1,31 @@
+name: EPUB Cover Auto Replacer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 1. 拉取倉庫代碼
+      uses: actions/checkout@v3
+
+    - name: 2. 設定 Python 環境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: 3. 安裝 Pillow 圖片庫
+      run: |
+        python -m pip install --upgrade pip
+        pip install Pillow
+
+    - name: 4. 執行替換腳本
+      run: python replace_cover.py
+
+    - name: 5. 打包並提供下載
+      uses: actions/upload-artifact@v4
+      with:
+        name: kobo-fixed-epub
+        path: output.epub
